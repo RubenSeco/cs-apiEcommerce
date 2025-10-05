@@ -2,6 +2,7 @@ using System.Text;
 using ApiEcommerce.Constants;
 using ApiEcommerce.Repository;
 using ApiEcommerce.Repository.IRepository;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -93,6 +94,21 @@ options =>
 }
 );
 
+// var apiVersioningBuilder = builder.Services.AddApiVersioning(option =>
+// {
+//   option.AssumeDefaultVersionWhenUnspecified = true;
+//   option.DefaultApiVersion = new ApiVersion(1, 0);
+//   option.ReportApiVersions = true;
+//   option.ApiVersionReader = ApiVersionReader.Combine(new QueryStringApiVersionReader("api-version"));
+
+// });
+
+// apiVersioningBuilder.AddApiExplorer(option =>
+// {
+//   option.GroupNameFormat = "'v'VVV"; //v1, v2, v3, ...
+//   option.SubstituteApiVersionInUrl = true; // api/v{version}/products
+
+// });
 
 builder.Services.AddCors(options =>
 {
@@ -103,24 +119,17 @@ builder.Services.AddCors(options =>
            .AllowAnyHeader();
   });
 });
-
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
   app.UseSwagger();
   app.UseSwaggerUI();
 }
-
 app.UseHttpsRedirection();
-
 app.UseCors(PolicyNames.AllowCors);
-
 app.UseResponseCaching();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
