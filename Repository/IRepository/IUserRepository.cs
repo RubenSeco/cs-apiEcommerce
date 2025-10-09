@@ -8,13 +8,13 @@ namespace ApiEcommerce.Repository.IRepository;
 
 public interface IUserRepository
 {
-  ICollection<User> GetUsers();
+  ICollection<ApplicationUser> GetUsers();
 
-  User? GetUser(int userId);
+  ApplicationUser? GetUser(string userId);
 
   bool IsUniqueUser(string userName);
 
   Task<UserLoginResponseDto> Login(UserLoginDto userLoginDto);
-  Task<User> Register(UserRegisterDto userRegisterDto);
+  Task<UserDataDto> Register(UserRegisterDto userRegisterDto);
 
 }

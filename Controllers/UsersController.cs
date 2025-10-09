@@ -38,13 +38,13 @@ namespace ApiEcommerce.Controllers
 
 
         // ! Obtener un usario por Id
-        [HttpGet("{id:int}", Name = "GetUser")]
+        [HttpGet("{id}", Name = "GetUser")]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
 
-        public IActionResult GetUser(int id)
+        public IActionResult GetUser(string id)
         {
             var user = _userRepository.GetUser(id);
             if (user == null)
