@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using ApiEcommerce.Models;
 using ApiEcommerce.Models.Dtos;
 using ApiEcommerce.Repository.IRepository;
@@ -24,6 +25,8 @@ namespace ApiEcommerce.Controllers
       _categoryRepository = categoryRepository;
       _mapper = mapper;
     }
+
+    // ! Obtener todos los productos
     [AllowAnonymous]
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -34,7 +37,7 @@ namespace ApiEcommerce.Controllers
       var productsDto = _mapper.Map<List<ProductDto>>(products);
       return Ok(productsDto);
     }
-
+    // ! Obtener un producto por el Id
     [AllowAnonymous]
     [HttpGet("{productId:int}", Name = "GetProduct")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -52,13 +55,15 @@ namespace ApiEcommerce.Controllers
       return Ok(productDto);
     }
 
+    // ! Crear un producto nuevo
+
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public IActionResult CreateProduct([FromBody] CreateProductDto createProductDto)
+    public IActionResult CreateProduct([FromForm] CreateProductDto createProductDto)
     {
       if (createProductDto == null)
       {
@@ -75,6 +80,13 @@ namespace ApiEcommerce.Controllers
         return BadRequest(ModelState);
       }
       var product = _mapper.Map<Product>(createProductDto);
+
+      // * Agregar una imagen al producto
+
+      UploadProductImage(createProductDto, product);
+
+      // *
+
       if (!_productRepository.CreateProduct(product))
       {
         ModelState.AddModelError("CustomError", $"Algo salió mal al guardar el registro {product.Name}");
@@ -84,6 +96,8 @@ namespace ApiEcommerce.Controllers
       var productoDto = _mapper.Map<ProductDto>(createdProduct);
       return CreatedAtRoute("GetProduct", new { productId = product.ProductId }, productoDto);
     }
+
+    // ! Obtener un producto por la categoría
 
     [HttpGet("searchProductByCategory/{categoryId:int}", Name = "GetProductsForCategory")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -101,6 +115,8 @@ namespace ApiEcommerce.Controllers
       return Ok(productsDto);
     }
 
+    // ! Obtener un producto por la descripción
+
     [HttpGet("searchProductByNameDescription/{searchTerm}", Name = "SearchProducts")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -116,6 +132,8 @@ namespace ApiEcommerce.Controllers
       var productsDto = _mapper.Map<List<ProductDto>>(products);
       return Ok(productsDto);
     }
+
+    // ! Gestionar la compra de un producto
 
     [HttpPatch("buyProduct/{name}/{quantity:int}", Name = "BuyProduct")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -142,13 +160,15 @@ namespace ApiEcommerce.Controllers
       return Ok($"Se compro {quantity} {units} del producto '{name}'");
     }
 
+    // ! Actualizar los datos de un producto
+
     [HttpPut("{productId:int}", Name = "UpdateProduct")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public IActionResult UpdateProduct(int productId, [FromBody] UpdateProductDto updateProductDto)
+    public IActionResult UpdateProduct(int productId, [FromForm] UpdateProductDto updateProductDto)
     {
       if (updateProductDto == null)
       {
@@ -166,6 +186,14 @@ namespace ApiEcommerce.Controllers
       }
       var product = _mapper.Map<Product>(updateProductDto);
       product.ProductId = productId;
+
+      // * Agregar una imagen a un producto ya creado
+
+      UploadProductImage(updateProductDto, product);
+
+      // *
+
+
       if (!_productRepository.UpdateProduct(product))
       {
         ModelState.AddModelError("CustomError", $"Algo salió mal al actualizar el registro {product.Name}");
@@ -173,6 +201,39 @@ namespace ApiEcommerce.Controllers
       }
       return NoContent();
     }
+
+    private void UploadProductImage(dynamic productDto, Product product)
+    {
+      if (productDto.Image != null)
+      {
+        string fileName = product.ProductId + Guid.NewGuid().ToString() + Path.GetExtension(productDto.Image.FileName);
+        var imagesFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "ProductsImages");
+        if (!Directory.Exists(imagesFolder))
+        {
+          Directory.CreateDirectory(imagesFolder);
+        }
+        var localPath = Path.Combine(imagesFolder, fileName);
+        FileInfo file = new FileInfo(localPath);
+        if (file.Exists)
+        {
+          file.Delete();
+        }
+        using (var stream = new FileStream(localPath, FileMode.Create))
+        {
+          productDto.Image.CopyTo(stream);
+        }
+        var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.Value}{HttpContext.Request.PathBase.Value}";
+        product.ImgUrl = $"{baseUrl}/ProductsImages/{fileName}";
+        product.ImgUrlLocal = localPath;
+
+      }
+      else
+      {
+        product.ImgUrl = "https://placehold.co/300x300";
+      }
+    }
+
+    // ! Eliminar un producto de la base
 
     [HttpDelete("{productId:int}", Name = "DeleteProduct")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

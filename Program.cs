@@ -1,5 +1,6 @@
 using System.Text;
 using ApiEcommerce.Constants;
+using ApiEcommerce.Data;
 using ApiEcommerce.Models;
 using ApiEcommerce.Repository;
 using ApiEcommerce.Repository.IRepository;
@@ -15,7 +16,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var dbConnectionString = builder.Configuration.GetConnectionString("ConexionSql");
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(dbConnectionString));
+// builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(dbConnectionString));
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+  options.UseSqlServer(dbConnectionString)
+  .UseSeeding((context, _) =>
+  {
+    var appContext = (ApplicationDbContext)context;
+    DataSeeder.SeedData(appContext);
+  }
+    // Seeding de Roles
+));
 
 builder.Services.AddResponseCaching(options =>
 {
@@ -170,6 +181,8 @@ if (app.Environment.IsDevelopment())
     options.SwaggerEndpoint("/swagger/v2/swagger.json", "ApiEcommerce v2");
   });
 }
+
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseCors(PolicyNames.AllowCors);
 app.UseResponseCaching();
